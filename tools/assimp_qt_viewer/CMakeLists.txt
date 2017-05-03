@@ -7,6 +7,30 @@ find_package(Qt5Widgets REQUIRED)
 find_package(DevIL REQUIRED)
 find_package(OpenGL REQUIRED)
 
+# dependencies of DevIL
+find_package(nvtt REQUIRED)
+find_package(ZLIB REQUIRED)
+find_package(JPEG REQUIRED)
+find_package(PNG REQUIRED)
+find_package(TIFF REQUIRED)
+set(DevIL_DEPS nvtt)
+if(TIFF_FOUND)
+    list(APPEND DevIL_INCS ${TIFF_INCLUDE_DIRS})
+    list(APPEND DevIL_DEPS ${TIFF_LIBRARIES})
+endif()
+if(PNG_FOUND)
+    list(APPEND DevIL_INCS ${PNG_INCLUDE_DIRS})
+    list(APPEND DevIL_DEPS ${PNG_LIBRARIES})
+endif()
+if(JPEG_FOUND)
+    list(APPEND DevIL_INCS ${JPEG_INCLUDE_DIRS})
+    list(APPEND DevIL_DEPS ${JPEG_LIBRARIES})
+endif()
+if(ZLIB_FOUND)
+    list(APPEND DevIL_INCS ${ZLIB_INCLUDE_DIRS})
+    list(APPEND DevIL_DEPS ${ZLIB_LIBRARIES})
+endif()
+
 include_directories(
 	${Qt5Widgets_INCLUDES}
 	${Assimp_SOURCE_DIR}/include
@@ -25,7 +49,7 @@ qt5_wrap_ui(UISrcs mainwindow.ui)
 qt5_wrap_cpp(MOCrcs mainwindow.hpp glview.hpp)
 
 add_executable(${PROJECT_NAME} ${assimp_qt_viewer_SRCS} ${UISrcs} ${MOCrcs})
-target_link_libraries(${PROJECT_NAME} ${QT_LIBRARIES} ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTOPENGL_LIBRARY} ${IL_LIBRARIES} ${OPENGL_LIBRARIES} assimp)
+target_link_libraries(${PROJECT_NAME} ${QT_LIBRARIES} ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTOPENGL_LIBRARY} ${IL_LIBRARIES} ${DevIL_DEPS} ${OPENGL_LIBRARIES} assimp)
 
 qt5_use_modules(${PROJECT_NAME} Widgets OpenGL)
 if(WIN32) # Check if we are on Windows
