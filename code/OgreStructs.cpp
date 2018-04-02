@@ -2,7 +2,9 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2016, assimp team
+Copyright (c) 2006-2018, assimp team
+
+
 All rights reserved.
 
 Redistribution and use of this software in source and binary forms,
@@ -41,10 +43,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef ASSIMP_BUILD_NO_OGRE_IMPORTER
 
 #include "OgreStructs.h"
-#include "TinyFormatter.h"
+#include <assimp/TinyFormatter.h>
 #include <assimp/scene.h>
 #include <assimp/DefaultLogger.hpp>
-#include "Exceptional.h"
+#include <assimp/Exceptional.h>
 
 
 namespace Assimp

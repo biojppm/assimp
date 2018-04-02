@@ -679,7 +679,7 @@ class PyAssimp3DViewer:
         logger.info("Loading model:" + path + "...")
 
         if postprocess:
-            self.scene = pyassimp.load(path, postprocess)
+            self.scene = pyassimp.load(path, processing=postprocess)
         else:
             self.scene = pyassimp.load(path)
         logger.info("Done.")
@@ -895,7 +895,7 @@ class PyAssimp3DViewer:
         aspect = camera.aspect
 
         u = 0.1  # unit size (in m)
-        l = 3 * u  # lenght of the camera cone
+        l = 3 * u  # length of the camera cone
         f = 3 * u  # aperture of the camera cone
 
         glPushMatrix()

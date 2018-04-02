@@ -3,13 +3,14 @@ import os
 from distutils.core import setup
 
 setup(name='pyassimp',
-      version='3.3',
+      version='4.1.0',
       license='ISC',
       description='Python bindings for the Open Asset Import Library (ASSIMP)',
       url='https://github.com/assimp/assimp',
       packages=['pyassimp'],
-      data_files=[('share/pyassimp', ['README.md']),
-                  ('share/examples/pyassimp', ['scripts/' + f for f in os.listdir('scripts/')]),
-                  ('lib/', [f for f in os.listdir('../../lib') if os.path.isfile(f)])],
+      data_files=[
+                  ('share/pyassimp', ['README.md']),
+                  ('share/examples/pyassimp', ['scripts/' + f for f in os.listdir('scripts/')])
+                 ],
       requires=['numpy']
       )

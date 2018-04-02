@@ -2,7 +2,9 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2016, assimp team
+Copyright (c) 2006-2018, assimp team
+
+
 All rights reserved.
 
 Redistribution and use of this software in source and binary forms,
@@ -54,7 +56,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 #if _MSC_VER > 1500 || (defined __GNUC___)
 #   define ASSIMP_STEP_USE_UNORDERED_MULTIMAP
-#   else
+#else
 #   define step_unordered_map map
 #   define step_unordered_multimap multimap
 #endif
@@ -70,7 +72,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #   endif
 #endif
 
-#include "LineSplitter.h"
+#include <assimp/LineSplitter.h>
 
 // uncomment this to have the loader evaluate all entities upon loading.
 // this is intended as stress test - by default, entities are evaluated
@@ -363,17 +365,16 @@ namespace STEP {
         // -------------------------------------------------------------------------------
         class ConversionSchema
         {
-
         public:
-
             struct SchemaEntry {
-                SchemaEntry(const char* name,ConvertObjectProc func)
-                    : name(name)
-                    , func(func)
-                {}
+                SchemaEntry( const char *name, ConvertObjectProc func )
+                : mName( name )
+                , mFunc(func) {
+                    // empty
+                }
 
-                const char* name;
-                ConvertObjectProc func;
+                const char* mName;
+                ConvertObjectProc mFunc;
             };
 
             typedef std::map<std::string,ConvertObjectProc> ConverterMap;
@@ -409,7 +410,7 @@ namespace STEP {
             const ConversionSchema& operator=( const SchemaEntry (& schemas)[N]) {
                 for(size_t i = 0; i < N; ++i ) {
                     const SchemaEntry& schema = schemas[i];
-                    converters[schema.name] = schema.func;
+                    converters[schema.mName] = schema.mFunc;
                 }
                 return *this;
             }
@@ -438,13 +439,17 @@ namespace STEP {
     // ------------------------------------------------------------------------------
     /** Base class for all concrete object instances */
     // ------------------------------------------------------------------------------
-    class Object
-    {
+    class Object {
     public:
-
-        virtual ~Object() {}
         Object(const char* classname = "unknown")
-            : classname(classname) {}
+        : id( 0 )
+        , classname(classname) {
+            // empty
+        }
+
+        virtual ~Object() {
+            // empty
+        }
 
     public:
 
@@ -459,7 +464,6 @@ namespace STEP {
             return dynamic_cast<T&>(*this);
         }
 
-
         template <typename T>
         const T* ToPtr() const {
             return dynamic_cast<const T*>(this);
@@ -471,7 +475,6 @@ namespace STEP {
         }
 
     public:
-
         uint64_t GetID() const {
             return id;
         }
@@ -488,7 +491,6 @@ namespace STEP {
         uint64_t id;
         const char* const classname;
     };
-
 
     template <typename T>
     size_t GenericFill(const STEP::DB& db, const EXPRESS::LIST& params, T* in);

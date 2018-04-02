@@ -2,7 +2,9 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2016, assimp team
+Copyright (c) 2006-2018, assimp team
+
+
 All rights reserved.
 
 Redistribution and use of this software in source and binary forms,
@@ -76,13 +78,11 @@ Model::Model(uint64_t id, const Element& element, const Document& doc, const std
     ResolveLinks(element,doc);
 }
 
-
 // ------------------------------------------------------------------------------------------------
 Model::~Model()
 {
 
 }
-
 
 // ------------------------------------------------------------------------------------------------
 void Model::ResolveLinks(const Element& element, const Document& doc)
@@ -130,7 +130,6 @@ void Model::ResolveLinks(const Element& element, const Document& doc)
         continue;
     }
 }
-
 
 // ------------------------------------------------------------------------------------------------
 bool Model::IsNull() const

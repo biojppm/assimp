@@ -3,7 +3,9 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2016, assimp team
+Copyright (c) 2006-2018, assimp team
+
+
 
 All rights reserved.
 
@@ -51,7 +53,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // internal headers
 #include "ImproveCacheLocality.h"
 #include "VertexTriangleAdjacency.h"
-#include "StringUtils.h"
+#include <assimp/StringUtils.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <assimp/DefaultLogger.hpp>
@@ -222,6 +224,7 @@ float ImproveCacheLocalityProcess::ProcessMesh( aiMesh* pMesh, unsigned int mesh
             iMaxRefTris = std::max(iMaxRefTris,*piCur);
         }
     }
+    ai_assert(iMaxRefTris > 0);
     unsigned int* piCandidates = new unsigned int[iMaxRefTris*3];
     unsigned int iCacheMisses = 0;
 

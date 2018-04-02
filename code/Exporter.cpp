@@ -3,7 +3,9 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2016, assimp team
+Copyright (c) 2006-2018, assimp team
+
+
 
 All rights reserved.
 
@@ -52,15 +54,15 @@ Here we implement only the C++ interface (Assimp::Exporter).
 
 #ifndef ASSIMP_BUILD_NO_EXPORT
 
-#include "BlobIOSystem.h"
-#include "SceneCombiner.h"
+#include <assimp/BlobIOSystem.h>
+#include <assimp/SceneCombiner.h>
 #include "BaseProcess.h"
 #include "Importer.h" // need this for GetPostProcessingStepInstanceList()
 
 #include "JoinVerticesProcess.h"
 #include "MakeVerboseFormat.h"
 #include "ConvertToLHProcess.h"
-#include "Exceptional.h"
+#include <assimp/Exceptional.h>
 #include "ScenePrivate.h"
 #include <memory>
 
@@ -82,6 +84,7 @@ void ExportSceneCollada(const char*,IOSystem*, const aiScene*, const ExportPrope
 void ExportSceneXFile(const char*,IOSystem*, const aiScene*, const ExportProperties*);
 void ExportSceneStep(const char*,IOSystem*, const aiScene*, const ExportProperties*);
 void ExportSceneObj(const char*,IOSystem*, const aiScene*, const ExportProperties*);
+void ExportSceneObjNoMtl(const char*,IOSystem*, const aiScene*, const ExportProperties*);
 void ExportSceneSTL(const char*,IOSystem*, const aiScene*, const ExportProperties*);
 void ExportSceneSTLBinary(const char*,IOSystem*, const aiScene*, const ExportProperties*);
 void ExportScenePly(const char*,IOSystem*, const aiScene*, const ExportProperties*);
@@ -89,30 +92,37 @@ void ExportScenePlyBinary(const char*, IOSystem*, const aiScene*, const ExportPr
 void ExportScene3DS(const char*, IOSystem*, const aiScene*, const ExportProperties*);
 void ExportSceneGLTF(const char*, IOSystem*, const aiScene*, const ExportProperties*);
 void ExportSceneGLB(const char*, IOSystem*, const aiScene*, const ExportProperties*);
+void ExportSceneGLTF2(const char*, IOSystem*, const aiScene*, const ExportProperties*);
+void ExportSceneGLB2(const char*, IOSystem*, const aiScene*, const ExportProperties*);
 void ExportSceneAssbin(const char*, IOSystem*, const aiScene*, const ExportProperties*);
 void ExportSceneAssxml(const char*, IOSystem*, const aiScene*, const ExportProperties*);
 void ExportSceneX3D(const char*, IOSystem*, const aiScene*, const ExportProperties*);
+void ExportSceneFBX(const char*, IOSystem*, const aiScene*, const ExportProperties*);
+void ExportSceneFBXA(const char*, IOSystem*, const aiScene*, const ExportProperties*);
+void ExportScene3MF( const char*, IOSystem*, const aiScene*, const ExportProperties* );
 
 // ------------------------------------------------------------------------------------------------
 // global array of all export formats which Assimp supports in its current build
 Exporter::ExportFormatEntry gExporters[] =
 {
 #ifndef ASSIMP_BUILD_NO_COLLADA_EXPORTER
-    Exporter::ExportFormatEntry( "collada", "COLLADA - Digital Asset Exchange Schema", "dae", &ExportSceneCollada),
+    Exporter::ExportFormatEntry( "collada", "COLLADA - Digital Asset Exchange Schema", "dae", &ExportSceneCollada ),
 #endif
 
 #ifndef ASSIMP_BUILD_NO_X_EXPORTER
     Exporter::ExportFormatEntry( "x", "X Files", "x", &ExportSceneXFile,
-        aiProcess_MakeLeftHanded | aiProcess_FlipWindingOrder | aiProcess_FlipUVs),
+        aiProcess_MakeLeftHanded | aiProcess_FlipWindingOrder | aiProcess_FlipUVs ),
 #endif
 
 #ifndef ASSIMP_BUILD_NO_STEP_EXPORTER
-    Exporter::ExportFormatEntry( "stp", "Step Files", "stp", &ExportSceneStep, 0),
+    Exporter::ExportFormatEntry( "stp", "Step Files", "stp", &ExportSceneStep, 0 ),
 #endif
 
 #ifndef ASSIMP_BUILD_NO_OBJ_EXPORTER
     Exporter::ExportFormatEntry( "obj", "Wavefront OBJ format", "obj", &ExportSceneObj,
-        aiProcess_GenSmoothNormals /*| aiProcess_PreTransformVertices */),
+        aiProcess_GenSmoothNormals /*| aiProcess_PreTransformVertices */ ),
+    Exporter::ExportFormatEntry( "objnomtl", "Wavefront OBJ format without material file", "obj", &ExportSceneObjNoMtl,
+        aiProcess_GenSmoothNormals /*| aiProcess_PreTransformVertices */ ),
 #endif
 
 #ifndef ASSIMP_BUILD_NO_STL_EXPORTER
@@ -135,26 +145,39 @@ Exporter::ExportFormatEntry gExporters[] =
 
 #ifndef ASSIMP_BUILD_NO_3DS_EXPORTER
     Exporter::ExportFormatEntry( "3ds", "Autodesk 3DS (legacy)", "3ds" , &ExportScene3DS,
-        aiProcess_Triangulate | aiProcess_SortByPType | aiProcess_JoinIdenticalVertices),
+        aiProcess_Triangulate | aiProcess_SortByPType | aiProcess_JoinIdenticalVertices ),
 #endif
 
 #ifndef ASSIMP_BUILD_NO_GLTF_EXPORTER
     Exporter::ExportFormatEntry( "gltf", "GL Transmission Format", "gltf", &ExportSceneGLTF,
-        aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_SortByPType),
+        aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_SortByPType ),
     Exporter::ExportFormatEntry( "glb", "GL Transmission Format (binary)", "glb", &ExportSceneGLB,
-        aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_SortByPType),
+        aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_SortByPType ),
+    Exporter::ExportFormatEntry( "gltf2", "GL Transmission Format v. 2", "gltf2", &ExportSceneGLTF2,
+        aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_SortByPType ),
+    Exporter::ExportFormatEntry( "glb2", "GL Transmission Format v. 2 (binary)", "glb2", &ExportSceneGLB2,
+        aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_SortByPType ),
 #endif
 
 #ifndef ASSIMP_BUILD_NO_ASSBIN_EXPORTER
-    Exporter::ExportFormatEntry( "assbin", "Assimp Binary", "assbin" , &ExportSceneAssbin, 0),
+    Exporter::ExportFormatEntry( "assbin", "Assimp Binary", "assbin" , &ExportSceneAssbin, 0 ),
 #endif
 
 #ifndef ASSIMP_BUILD_NO_ASSXML_EXPORTER
-    Exporter::ExportFormatEntry( "assxml", "Assxml Document", "assxml" , &ExportSceneAssxml, 0),
+    Exporter::ExportFormatEntry( "assxml", "Assxml Document", "assxml" , &ExportSceneAssxml, 0 ),
 #endif
 
 #ifndef ASSIMP_BUILD_NO_X3D_EXPORTER
-	Exporter::ExportFormatEntry( "x3d", "Extensible 3D", "x3d" , &ExportSceneX3D, 0),
+    Exporter::ExportFormatEntry( "x3d", "Extensible 3D", "x3d" , &ExportSceneX3D, 0 ),
+#endif
+
+#ifndef ASSIMP_BUILD_NO_FBX_EXPORTER
+    Exporter::ExportFormatEntry( "fbx", "Autodesk FBX (binary)", "fbx", &ExportSceneFBX, 0 ),
+    Exporter::ExportFormatEntry( "fbxa", "Autodesk FBX (ascii)", "fbx", &ExportSceneFBXA, 0 ),
+#endif
+
+#ifndef ASSIMP_BUILD_NO_3MF_EXPORTER
+    Exporter::ExportFormatEntry( "3mf", "The 3MF-File-Format", "3mf", &ExportScene3MF, 0 )
 #endif
 };
 
@@ -171,8 +194,10 @@ public:
         GetPostProcessingStepInstanceList(mPostProcessingSteps);
 
         // grab all built-in exporters
-        mExporters.resize(ASSIMP_NUM_EXPORTERS);
-        std::copy(gExporters,gExporters+ASSIMP_NUM_EXPORTERS,mExporters.begin());
+        if ( 0 != ( ASSIMP_NUM_EXPORTERS ) ) {
+            mExporters.resize( ASSIMP_NUM_EXPORTERS );
+            std::copy( gExporters, gExporters + ASSIMP_NUM_EXPORTERS, mExporters.begin() );
+        }
     }
 
     ~ExporterPimpl()
@@ -186,7 +211,6 @@ public:
     }
 
 public:
-
     aiExportDataBlob* blob;
     std::shared_ptr< Assimp::IOSystem > mIOSystem;
     bool mIsDefaultIOHandler;
@@ -236,7 +260,7 @@ bool Exporter::IsDefaultIOHandler() const {
 
 // ------------------------------------------------------------------------------------------------
 const aiExportDataBlob* Exporter::ExportToBlob( const aiScene* pScene, const char* pFormatId,
-                                                unsigned int, const ExportProperties* pProperties ) {
+                                                unsigned int, const ExportProperties* /*pProperties*/ ) {
     if (pimpl->blob) {
         delete pimpl->blob;
         pimpl->blob = NULL;
@@ -284,7 +308,8 @@ bool IsVerboseFormat(const aiScene* pScene) {
 }
 
 // ------------------------------------------------------------------------------------------------
-aiReturn Exporter::Export( const aiScene* pScene, const char* pFormatId, const char* pPath, unsigned int pPreprocessing, const ExportProperties* pProperties) {
+aiReturn Exporter::Export( const aiScene* pScene, const char* pFormatId, const char* pPath,
+        unsigned int pPreprocessing, const ExportProperties* pProperties) {
     ASSIMP_BEGIN_EXCEPTION_REGION();
 
     // when they create scenes from scratch, users will likely create them not in verbose
@@ -407,6 +432,7 @@ aiReturn Exporter::Export( const aiScene* pScene, const char* pFormatId, const c
 
     pimpl->mError = std::string("Found no exporter to handle this file format: ") + pFormatId;
     ASSIMP_END_EXCEPTION_REGION(aiReturn);
+
     return AI_FAILURE;
 }
 
@@ -490,7 +516,6 @@ ExportProperties::ExportProperties(const ExportProperties &other)
 , mMatrixProperties(other.mMatrixProperties) {
     // empty
 }
-
 
 // ------------------------------------------------------------------------------------------------
 // Set a configuration property

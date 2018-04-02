@@ -3,7 +3,9 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2016, assimp team
+Copyright (c) 2006-2018, assimp team
+
+
 
 All rights reserved.
 
@@ -49,8 +51,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "OptimizeMeshes.h"
 #include "ProcessHelper.h"
-#include "SceneCombiner.h"
-#include "Exceptional.h"
+#include <assimp/SceneCombiner.h>
+#include <assimp/Exceptional.h>
 
 using namespace Assimp;
 
@@ -180,11 +182,8 @@ void OptimizeMeshesProcess::ProcessNode( aiNode* pNode)
                     verts += mScene->mMeshes[am]->mNumVertices;
                     faces += mScene->mMeshes[am]->mNumFaces;
 
+                    pNode->mMeshes[a] = pNode->mMeshes[pNode->mNumMeshes - 1];
                     --pNode->mNumMeshes;
-                    for( unsigned int n = a; n < pNode->mNumMeshes; ++n ) {
-                        pNode->mMeshes[ n ] = pNode->mMeshes[ n + 1 ];
-                    }
-
                     --a;
                 }
             }

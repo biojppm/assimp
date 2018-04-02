@@ -3,7 +3,9 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2016, assimp team
+Copyright (c) 2006-2018, assimp team
+
+
 
 All rights reserved.
 
@@ -49,27 +51,28 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "TargetAnimation.h"
 #include <assimp/scene.h>
 #include <assimp/DefaultLogger.hpp>
-#include "StringComparison.h"
+#include <assimp/StringComparison.h>
 #include <memory>
 #include <cctype>
 
 using namespace Assimp;
 
+static const unsigned int NotSet = 0xcdcdcdcd;
+
 // ------------------------------------------------------------------------------------------------
 // Setup final material indices, generae a default material if necessary
 void Discreet3DSImporter::ReplaceDefaultMaterial()
 {
-
     // Try to find an existing material that matches the
     // typical default material setting:
     // - no textures
     // - diffuse color (in grey!)
     // NOTE: This is here to workaround the fact that some
     // exporters are writing a default material, too.
-    unsigned int idx = 0xcdcdcdcd;
+    unsigned int idx( NotSet );
     for (unsigned int i = 0; i < mScene->mMaterials.size();++i)
     {
-        std::string s = mScene->mMaterials[i].mName;
+        std::string &s = mScene->mMaterials[i].mName;
         for ( std::string::iterator it = s.begin(); it != s.end(); ++it ) {
             *it = static_cast< char >( ::tolower( *it ) );
         }
@@ -92,7 +95,9 @@ void Discreet3DSImporter::ReplaceDefaultMaterial()
         }
         idx = i;
     }
-    if (0xcdcdcdcd == idx)idx = (unsigned int)mScene->mMaterials.size();
+    if ( NotSet == idx ) {
+        idx = ( unsigned int )mScene->mMaterials.size();
+    }
 
     // now iterate through all meshes and through all faces and
     // find all faces that are using the default material
@@ -123,9 +128,8 @@ void Discreet3DSImporter::ReplaceDefaultMaterial()
     if (cnt && idx == mScene->mMaterials.size())
     {
         // We need to create our own default material
-        D3DS::Material sMat;
+        D3DS::Material sMat("%%%DEFAULT");
         sMat.mDiffuse = aiColor3D(0.3f,0.3f,0.3f);
-        sMat.mName = "%%%DEFAULT";
         mScene->mMaterials.push_back(sMat);
 
         DefaultLogger::get()->info("3DS: Generating default material");

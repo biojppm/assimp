@@ -3,7 +3,9 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2016, assimp team
+Copyright (c) 2006-2018, assimp team
+
+
 
 All rights reserved.
 
@@ -52,10 +54,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assimp/importerdesc.h>
 
 #include "ColladaParser.h"
-#include "fast_atof.h"
-#include "ParsingUtils.h"
-#include "SkeletonMeshBuilder.h"
-#include "CreateAnimMesh.h"
+#include <assimp/fast_atof.h>
+#include <assimp/ParsingUtils.h>
+#include <assimp/SkeletonMeshBuilder.h>
+#include <assimp/CreateAnimMesh.h>
 
 #include "time.h"
 #include "math.h"
@@ -118,7 +120,7 @@ bool ColladaLoader::CanRead( const std::string& pFile, IOSystem* pIOHandler, boo
          *  might be NULL and it's our duty to return true here.
          */
         if (!pIOHandler)return true;
-        const char* tokens[] = {"collada"};
+        const char* tokens[] = {"<collada"};
         return SearchFileHeaderForToken(pIOHandler,pFile,tokens,1);
     }
     return false;
@@ -129,8 +131,8 @@ void ColladaLoader::SetupProperties(const Importer* pImp)
 {
     noSkeletonMesh = pImp->GetPropertyInteger(AI_CONFIG_IMPORT_NO_SKELETON_MESHES,0) != 0;
     ignoreUpDirection = pImp->GetPropertyInteger(AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION,0) != 0;
+    useColladaName = pImp->GetPropertyInteger(AI_CONFIG_IMPORT_COLLADA_USE_COLLADA_NAMES,0) != 0;
 }
-
 
 // ------------------------------------------------------------------------------------------------
 // Get file extension list
@@ -674,7 +676,7 @@ aiMesh* ColladaLoader::CreateMesh( const ColladaParser& pParser, const Collada::
     // create morph target meshes if any
     std::vector<aiMesh*> targetMeshes;
     std::vector<float> targetWeights;
-    Collada::MorphMethod method;
+    Collada::MorphMethod method = Collada::Normalized;
 
     for(std::map<std::string, Collada::Controller>::const_iterator it = pParser.mControllerLibrary.begin();
         it != pParser.mControllerLibrary.end(); it++)
@@ -728,7 +730,7 @@ aiMesh* ColladaLoader::CreateMesh( const ColladaParser& pParser, const Collada::
                                 ? aiMorphingMethod_MORPH_RELATIVE
                                 : aiMorphingMethod_MORPH_NORMALIZED;
         dstMesh->mAnimMeshes = new aiAnimMesh*[animMeshes.size()];
-        dstMesh->mNumAnimMeshes = animMeshes.size();
+        dstMesh->mNumAnimMeshes = static_cast<unsigned int>(animMeshes.size());
         for (unsigned int i = 0; i < animMeshes.size(); i++)
             dstMesh->mAnimMeshes[i] = animMeshes.at(i);
     }
@@ -1119,6 +1121,7 @@ void ColladaLoader::CreateAnimation( aiScene* pScene, const ColladaParser& pPars
             continue;
 
         // now check all channels if they affect the current node
+        std::string targetID, subElement;
         for( std::vector<Collada::AnimationChannel>::const_iterator cit = pSrcAnim->mChannels.begin();
             cit != pSrcAnim->mChannels.end(); ++cit)
         {
@@ -1145,7 +1148,9 @@ void ColladaLoader::CreateAnimation( aiScene* pScene, const ColladaParser& pPars
             }
             if( srcChannel.mTarget.find( '/', slashPos+1) != std::string::npos)
                 continue;
-            std::string targetID = srcChannel.mTarget.substr( 0, slashPos);
+
+            targetID.clear();
+            targetID = srcChannel.mTarget.substr( 0, slashPos);
             if( targetID != srcNode->mID)
                 continue;
 
@@ -1158,7 +1163,8 @@ void ColladaLoader::CreateAnimation( aiScene* pScene, const ColladaParser& pPars
 
                 entry.mTransformId = srcChannel.mTarget.substr( slashPos+1, dotPos - slashPos - 1);
 
-                std::string subElement = srcChannel.mTarget.substr( dotPos+1);
+                subElement.clear();
+                subElement = srcChannel.mTarget.substr( dotPos+1);
                 if( subElement == "ANGLE")
                     entry.mSubElement = 3; // last number in an Axis-Angle-Transform is the angle
                 else if( subElement == "X")
@@ -1179,7 +1185,8 @@ void ColladaLoader::CreateAnimation( aiScene* pScene, const ColladaParser& pPars
             if (bracketPos != std::string::npos)
             {
                 entry.mTransformId = srcChannel.mTarget.substr(slashPos + 1, bracketPos - slashPos - 1);
-                std::string subElement = srcChannel.mTarget.substr(bracketPos);
+                subElement.clear();
+                subElement = srcChannel.mTarget.substr(bracketPos);
 
                 if (subElement == "(0)(0)")
                     entry.mSubElement = 0;
@@ -1213,7 +1220,6 @@ void ColladaLoader::CreateAnimation( aiScene* pScene, const ColladaParser& pPars
                     entry.mSubElement = 14;
                 else if (subElement == "(3)(3)")
                     entry.mSubElement = 15;
-
             }
 
             // determine which transform step is affected by this channel
@@ -1377,9 +1383,9 @@ void ColladaLoader::CreateAnimation( aiScene* pScene, const ColladaParser& pPars
         {
               aiNodeAnim* dstAnim = new aiNodeAnim;
               dstAnim->mNodeName = nodeName;
-              dstAnim->mNumPositionKeys = resultTrafos.size();
-              dstAnim->mNumRotationKeys= resultTrafos.size();
-              dstAnim->mNumScalingKeys = resultTrafos.size();
+              dstAnim->mNumPositionKeys = static_cast<unsigned int>(resultTrafos.size());
+              dstAnim->mNumRotationKeys = static_cast<unsigned int>(resultTrafos.size());
+              dstAnim->mNumScalingKeys = static_cast<unsigned int>(resultTrafos.size());
               dstAnim->mPositionKeys = new aiVectorKey[resultTrafos.size()];
               dstAnim->mRotationKeys = new aiQuatKey[resultTrafos.size()];
               dstAnim->mScalingKeys = new aiVectorKey[resultTrafos.size()];
@@ -1445,11 +1451,11 @@ void ColladaLoader::CreateAnimation( aiScene* pScene, const ColladaParser& pPars
                     ++morphAnimChannelIndex;
                 }
 
-                morphAnim->mNumKeys = morphTimeValues.size();
+                morphAnim->mNumKeys = static_cast<unsigned int>(morphTimeValues.size());
                 morphAnim->mKeys = new aiMeshMorphKey[morphAnim->mNumKeys];
                 for (unsigned int key = 0; key < morphAnim->mNumKeys; key++)
                 {
-                    morphAnim->mKeys[key].mNumValuesAndWeights = morphChannels.size();
+                    morphAnim->mKeys[key].mNumValuesAndWeights = static_cast<unsigned int>(morphChannels.size());
                     morphAnim->mKeys[key].mValues = new unsigned int [morphChannels.size()];
                     morphAnim->mKeys[key].mWeights = new double [morphChannels.size()];
 
@@ -1470,13 +1476,13 @@ void ColladaLoader::CreateAnimation( aiScene* pScene, const ColladaParser& pPars
     {
         aiAnimation* anim = new aiAnimation;
         anim->mName.Set( pName);
-        anim->mNumChannels = anims.size();
+        anim->mNumChannels = static_cast<unsigned int>(anims.size());
         if (anim->mNumChannels > 0)
         {
             anim->mChannels = new aiNodeAnim*[anims.size()];
             std::copy( anims.begin(), anims.end(), anim->mChannels);
         }
-        anim->mNumMorphMeshChannels = morphAnims.size();
+        anim->mNumMorphMeshChannels = static_cast<unsigned int>(morphAnims.size());
         if (anim->mNumMorphMeshChannels > 0)
         {
             anim->mMorphMeshChannels = new aiMeshMorphAnim*[anim->mNumMorphMeshChannels];
@@ -1619,7 +1625,7 @@ void ColladaLoader::FillMaterials( const ColladaParser& pParser, aiScene* /*pSce
         mat.AddProperty( &effect.mRefractIndex, 1, AI_MATKEY_REFRACTI);
 
         // transparency, a very hard one. seemingly not all files are following the
-        // specification here (1.0 transparency => completly opaque)...
+        // specification here (1.0 transparency => completely opaque)...
         // therefore, we let the opportunity for the user to manually invert
         // the transparency if necessary and we add preliminary support for RGB_ZERO mode
         if(effect.mTransparency >= 0.f && effect.mTransparency <= 1.f) {
@@ -1725,6 +1731,8 @@ void ColladaLoader::BuildMaterials( ColladaParser& pParser, aiScene* /*pScene*/)
 aiString ColladaLoader::FindFilenameForEffectTexture( const ColladaParser& pParser,
     const Collada::Effect& pEffect, const std::string& pName)
 {
+    aiString result;
+
     // recurse through the param references until we end up at an image
     std::string name = pName;
     while( 1)
@@ -1743,11 +1751,17 @@ aiString ColladaLoader::FindFilenameForEffectTexture( const ColladaParser& pPars
     ColladaParser::ImageLibrary::const_iterator imIt = pParser.mImageLibrary.find( name);
     if( imIt == pParser.mImageLibrary.end())
     {
-        throw DeadlyImportError( format() <<
-            "Collada: Unable to resolve effect texture entry \"" << pName << "\", ended up at ID \"" << name << "\"." );
-    }
+        //missing texture should not stop the conversion
+        //throw DeadlyImportError( format() <<
+        //    "Collada: Unable to resolve effect texture entry \"" << pName << "\", ended up at ID \"" << name << "\"." );
 
-    aiString result;
+        DefaultLogger::get()->warn("Collada: Unable to resolve effect texture entry \"" + pName + "\", ended up at ID \"" + name + "\".");
+
+        //set default texture file name
+        result.Set(name + ".jpg");
+        ConvertPath(result);
+        return result;
+    }
 
     // if this is an embedded texture image setup an aiTexture for it
     if (imIt->second.mFileName.empty())
@@ -1770,6 +1784,11 @@ aiString ColladaLoader::FindFilenameForEffectTexture( const ColladaParser& pPars
         tex->pcData = (aiTexel*)new char[tex->mWidth];
         memcpy(tex->pcData,&imIt->second.mImageData[0],tex->mWidth);
 
+        // TODO: check the possibility of using the flag "AI_CONFIG_IMPORT_FBX_EMBEDDED_TEXTURES_LEGACY_NAMING"
+        // In FBX files textures are now stored internally by Assimp with their filename included
+        // Now Assimp can lookup thru the loaded textures after all data is processed
+        // We need to load all textures before referencing them, as FBX file format order may reference a texture before loading it
+        // This may occur on this case too, it has to be studied
         // setup texture reference string
         result.data[0] = '*';
         result.length = 1 + ASSIMP_itoa10(result.data+1,static_cast<unsigned int>(MAXLEN-1),static_cast<int32_t>(mTextures.size()));
@@ -1895,14 +1914,18 @@ const Collada::Node* ColladaLoader::FindNodeBySID( const Collada::Node* pNode, c
 }
 
 // ------------------------------------------------------------------------------------------------
-// Finds a proper name for a node derived from the collada-node's properties
+// Finds a proper unique name for a node derived from the collada-node's properties.
+// The name must be unique for proper node-bone association.
 std::string ColladaLoader::FindNameForNode( const Collada::Node* pNode)
 {
-    // now setup the name of the node. We take the name if not empty, otherwise the collada ID
-    // FIX: Workaround for XSI calling the instanced visual scene 'untitled' by default.
-    if (!pNode->mName.empty() && pNode->mName != "untitled")
+    // If explicitly requested, just use the collada name.
+    if (useColladaName) {
         return pNode->mName;
-    else if (!pNode->mID.empty())
+    }
+
+    // Now setup the name of the assimp node. The collada name might not be
+    // unique, so we use the collada ID.
+    if (!pNode->mID.empty())
         return pNode->mID;
     else if (!pNode->mSID.empty())
     return pNode->mSID;

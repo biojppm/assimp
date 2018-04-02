@@ -3,7 +3,9 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2016, assimp team
+Copyright (c) 2006-2018, assimp team
+
+
 
 All rights reserved.
 
@@ -50,12 +52,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // internal headers
 #include "3DSLoader.h"
-#include "Macros.h"
+#include <assimp/Macros.h>
 #include <assimp/IOSystem.hpp>
 #include <assimp/scene.h>
 #include <assimp/DefaultLogger.hpp>
 #include <assimp/importerdesc.h>
-#include "StringComparison.h"
+#include <assimp/StringComparison.h>
 
 using namespace Assimp;
 
@@ -104,29 +106,31 @@ static const aiImporterDesc desc = {
 // ------------------------------------------------------------------------------------------------
 // Constructor to be privately used by Importer
 Discreet3DSImporter::Discreet3DSImporter()
-    : stream(),
-    mLastNodeIndex(),
-    mCurrentNode(),
-    mRootNode(),
-    mScene(),
-    mMasterScale(),
-    bHasBG(),
-    bIsPrj()
-{}
+: stream()
+, mLastNodeIndex()
+, mCurrentNode()
+, mRootNode()
+, mScene()
+, mMasterScale()
+, bHasBG()
+, bIsPrj() {
+    // empty
+}
 
 // ------------------------------------------------------------------------------------------------
 // Destructor, private as well
-Discreet3DSImporter::~Discreet3DSImporter()
-{}
+Discreet3DSImporter::~Discreet3DSImporter() {
+    // empty
+}
 
 // ------------------------------------------------------------------------------------------------
 // Returns whether the class can handle the format of the given file.
-bool Discreet3DSImporter::CanRead( const std::string& pFile, IOSystem* pIOHandler, bool checkSig) const
-{
+bool Discreet3DSImporter::CanRead( const std::string& pFile, IOSystem* pIOHandler, bool checkSig) const {
     std::string extension = GetExtension(pFile);
     if(extension == "3ds" || extension == "prj" ) {
         return true;
     }
+
     if (!extension.length() || checkSig) {
         uint16_t token[3];
         token[0] = 0x4d4d;
@@ -169,7 +173,7 @@ void Discreet3DSImporter::InternReadFile( const std::string& pFile,
 
     // Initialize members
     mLastNodeIndex             = -1;
-    mCurrentNode               = new D3DS::Node();
+    mCurrentNode               = new D3DS::Node("UNNAMED");
     mRootNode                  = mCurrentNode;
     mRootNode->mHierarchyPos   = -1;
     mRootNode->mHierarchyIndex = -1;
@@ -208,7 +212,7 @@ void Discreet3DSImporter::InternReadFile( const std::string& pFile,
     ConvertScene(pScene);
 
     // Generate the node graph for the scene. This is a little bit
-    // tricky since we'll need to split some meshes into submeshes
+    // tricky since we'll need to split some meshes into sub-meshes
     GenerateNodeGraph(pScene);
 
     // Now apply the master scaling factor to the scene
@@ -345,7 +349,7 @@ void Discreet3DSImporter::ParseObjectChunk()
     case Discreet3DS::CHUNK_MAT_MATERIAL:
 
         // Add a new material to the list
-        mScene->mMaterials.push_back(D3DS::Material());
+        mScene->mMaterials.push_back(D3DS::Material(std::string("UNNAMED_" + to_string(mScene->mMaterials.size()))));
         ParseMaterialChunk();
         break;
 
@@ -401,11 +405,7 @@ void Discreet3DSImporter::ParseChunk(const char* name, unsigned int num)
     case Discreet3DS::CHUNK_TRIMESH:
         {
         // this starts a new triangle mesh
-        mScene->mMeshes.push_back(D3DS::Mesh());
-        D3DS::Mesh& m = mScene->mMeshes.back();
-
-        // Setup the name of the mesh
-        m.mName = std::string(name, num);
+        mScene->mMeshes.push_back(D3DS::Mesh(std::string(name, num)));
 
         // Read mesh chunks
         ParseMeshChunk();
@@ -689,8 +689,7 @@ void Discreet3DSImporter::ParseHierarchyChunk(uint16_t parent)
             pcNode->mInstanceCount++;
             instanceNumber = pcNode->mInstanceCount;
         }
-        pcNode = new D3DS::Node();
-        pcNode->mName = name;
+        pcNode = new D3DS::Node(name);
         pcNode->mInstanceNumber = instanceNumber;
 
         // There are two unknown values which we can safely ignore
@@ -1380,7 +1379,7 @@ void Discreet3DSImporter::ParseColorChunk( aiColor3D* out, bool acceptPercent )
         bGamma = true;
 
     case Discreet3DS::CHUNK_RGBF:
-        if (sizeof(ai_real) * 3 > diff)   {
+        if (sizeof(float) * 3 > diff)   {
             *out = clrError;
             return;
         }

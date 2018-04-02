@@ -3,7 +3,9 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2016, assimp team
+Copyright (c) 2006-2018, assimp team
+
+
 
 All rights reserved.
 
@@ -48,8 +50,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "JoinVerticesProcess.h"
 #include "ProcessHelper.h"
-#include "Vertex.h"
-#include "TinyFormatter.h"
+#include <assimp/Vertex.h>
+#include <assimp/TinyFormatter.h>
 #include <stdio.h>
 
 using namespace Assimp;

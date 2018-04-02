@@ -3,7 +3,8 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2017, assimp team
+Copyright (c) 2006-2018, assimp team
+
 
 All rights reserved.
 
@@ -45,8 +46,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assimp/scene.h>
 #include "ScenePrivate.h"
 
-static const unsigned int MajorVersion = 3;
-static const unsigned int MinorVersion = 3;
+static const unsigned int MajorVersion = 4;
+static const unsigned int MinorVersion = 1;
 
 // --------------------------------------------------------------------------------
 // Legal information string - dont't remove this.
@@ -107,34 +108,37 @@ ASSIMP_API unsigned int aiGetCompileFlags ()    {
 #include "revision.h"
 
 // ------------------------------------------------------------------------------------------------
-ASSIMP_API unsigned int aiGetVersionRevision ()
-{
+ASSIMP_API unsigned int aiGetVersionRevision() {
     return GitVersion;
+}
+
+ASSIMP_API const char *aiGetBranchName() {
+    return GitBranch;
 }
 
 // ------------------------------------------------------------------------------------------------
 ASSIMP_API aiScene::aiScene()
-    : mFlags(0)
-    , mRootNode(NULL)
-    , mNumMeshes(0)
-    , mMeshes(NULL)
-    , mNumMaterials(0)
-    , mMaterials(NULL)
-    , mNumAnimations(0)
-    , mAnimations(NULL)
-    , mNumTextures(0)
-    , mTextures(NULL)
-    , mNumLights(0)
-    , mLights(NULL)
-    , mNumCameras(0)
-    , mCameras(NULL)
-    , mPrivate(new Assimp::ScenePrivateData())
-    {
-    }
+: mFlags(0)
+, mRootNode(nullptr)
+, mNumMeshes(0)
+, mMeshes(nullptr)
+, mNumMaterials(0)
+, mMaterials(nullptr)
+, mNumAnimations(0)
+, mAnimations(nullptr)
+, mNumTextures(0)
+, mTextures(nullptr)
+, mNumLights(0)
+, mLights(nullptr)
+, mNumCameras(0)
+, mCameras(nullptr)
+, mMetaData(nullptr)
+, mPrivate(new Assimp::ScenePrivateData()) {
+	// empty
+}
 
 // ------------------------------------------------------------------------------------------------
-ASSIMP_API aiScene::~aiScene()
-{
+ASSIMP_API aiScene::~aiScene() {
     // delete all sub-objects recursively
     delete mRootNode;
 
@@ -170,6 +174,9 @@ ASSIMP_API aiScene::~aiScene()
         for( unsigned int a = 0; a < mNumCameras; a++)
             delete mCameras[a];
     delete [] mCameras;
+
+    aiMetadata::Dealloc(mMetaData);
+    mMetaData = nullptr;
 
     delete static_cast<Assimp::ScenePrivateData*>( mPrivate );
 }

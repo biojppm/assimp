@@ -3,7 +3,9 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2016, assimp team
+Copyright (c) 2006-2018, assimp team
+
+
 
 All rights reserved.
 
@@ -305,7 +307,7 @@ bool RemoveVCProcess::ProcessMesh(aiMesh* pMesh)
         if (!pMesh->mColors[i])break;
         if (configDeleteFlags & aiComponent_COLORSn(i) || b)
         {
-            delete pMesh->mColors[i];
+            delete [] pMesh->mColors[i];
             pMesh->mColors[i] = NULL;
             ret = true;
 

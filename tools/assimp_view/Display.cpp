@@ -41,7 +41,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "assimp_view.h"
 #include "AnimEvaluator.h"
 #include "SceneAnimator.h"
-#include "StringUtils.h"
+#include <assimp/StringUtils.h>
+
+#include <commdlg.h>
 
 namespace AssimpView {
 

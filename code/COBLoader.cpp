@@ -2,7 +2,8 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2016, assimp team
+Copyright (c) 2006-2018, assimp team
+
 All rights reserved.
 
 Redistribution and use of this software in source and binary forms,
@@ -47,12 +48,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "COBLoader.h"
 #include "COBScene.h"
 
-#include "StreamReader.h"
-#include "ParsingUtils.h"
-#include "fast_atof.h"
+#include <assimp/StreamReader.h>
+#include <assimp/ParsingUtils.h>
+#include <assimp/fast_atof.h>
 
-#include "LineSplitter.h"
-#include "TinyFormatter.h"
+#include <assimp/LineSplitter.h>
+#include <assimp/TinyFormatter.h>
 #include <memory>
 #include <assimp/IOSystem.hpp>
 #include <assimp/DefaultLogger.hpp>
@@ -941,20 +942,22 @@ void COBImporter::UnsupportedChunk_Binary( StreamReaderLE& reader, const ChunkIn
 // ------------------------------------------------------------------------------------------------
 // tiny utility guard to aid me at staying within chunk boundaries.
 class chunk_guard {
-
 public:
-
     chunk_guard(const COB::ChunkInfo& nfo, StreamReaderLE& reader)
-        : nfo(nfo)
-        , reader(reader)
-        , cur(reader.GetCurrentPos())
-    {
+    : nfo(nfo)
+    , reader(reader)
+    , cur(reader.GetCurrentPos()) {
     }
 
     ~chunk_guard() {
         // don't do anything if the size is not given
         if(nfo.size != static_cast<unsigned int>(-1)) {
-            reader.IncPtr(static_cast<int>(nfo.size)-reader.GetCurrentPos()+cur);
+            try {
+                reader.IncPtr( static_cast< int >( nfo.size ) - reader.GetCurrentPos() + cur );
+            } catch ( DeadlyImportError e ) {
+                // out of limit so correct the value
+                reader.IncPtr( reader.GetReadLimit() );
+            }
         }
     }
 
